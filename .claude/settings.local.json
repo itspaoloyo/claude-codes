@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python \"C:\\\\Users\\\\paolo\\\\Desktop\\\\Claude codes\\\\hello.py\")",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "PowerShell(gh --version)"
+    ]
+  }
+}
