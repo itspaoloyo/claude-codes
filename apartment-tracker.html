@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apartment Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f0f0f;
+      font-family: sans-serif;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 0.1em;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1.75rem;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #777;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      padding: 0.55rem 1.1rem 0.65rem;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover { color: #bbb; }
+
+    .tab-btn.active {
+      border-bottom-color: #5a7ab5;
+      color: #e8e8e8;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Shared section card ── */
+    .section {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section h2 {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 1.1rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    label { font-size: 0.85rem; color: #aaa; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 5px;
+      color: #e8e8e8;
+      font-family: sans-serif;
+      font-size: 0.95rem;
+      padding: 0.55rem 0.75rem;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus { border-color: #5a7ab5; }
+    select option { background: #1a1a1a; }
+    textarea { resize: vertical; min-height: 90px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* ── Amenity toggles ── */
+    .amenity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid #222;
+    }
+
+    .amenity-row:last-child { border-bottom: none; }
+    .amenity-label { font-size: 0.9rem; color: #ccc; }
+
+    .toggle-group { display: flex; gap: 0.5rem; }
+
+    .toggle-group label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #aaa;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 0.3rem 0.65rem;
+      transition: border-color 0.15s, color 0.15s;
+      user-select: none;
+    }
+
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-group label:has(input:checked) {
+      border-color: #5a7ab5;
+      color: #7fa8e0;
+    }
+
+    /* ── Submit button ── */
+    .btn-primary {
+      background: #5a7ab5;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 2rem;
+      width: 100%;
+      margin-top: 0.5rem;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary:hover { background: #6d8ec7; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #status-msg {
+      margin-top: 0.85rem;
+      text-align: center;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+
+    #status-msg.success { color: #6dbf7e; }
+    #status-msg.error   { color: #cf6679; }
+
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+    }
+
+    /* ── View tab ── */
+    .view-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-load {
+      background: #5a7ab5;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.9rem;
+      padding: 0.55rem 1.25rem;
+      transition: background 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-load:hover { background: #6d8ec7; }
+    .btn-load:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #search-box {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e8e8e8;
+      font-family: sans-serif;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      flex: 1;
+      min-width: 160px;
+      transition: border-color 0.15s;
+    }
+
+    #search-box:focus { border-color: #5a7ab5; }
+    #search-box::placeholder { color: #555; }
+
+    #view-status {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    #apt-list { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* ── Apartment card ── */
+    .apt-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .apt-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.1rem 1.25rem 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .apt-card-header:hover { background: #1f1f1f; }
+
+    .apt-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e8e8e8;
+    }
+
+    .apt-sub {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 0.2rem;
+    }
+
+    .apt-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .apt-price {
+      font-size: 1rem;
+      color: #c8daf2;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .badge-none     { background: #2a2020; color: #c07070; }
+    .badge-scheduled{ background: #1e2535; color: #7fa8e0; }
+    .badge-toured   { background: #1a2a1e; color: #6dbf7e; }
+
+    .expand-icon {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 0.15rem;
+    }
+
+    /* Card body (collapsed by default) */
+    .apt-card-body {
+      display: none;
+      padding: 0 1.25rem 1.25rem;
+      border-top: 1px solid #222;
+    }
+
+    .apt-card-body.open { display: block; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem 1.5rem;
+      margin: 1rem 0;
+    }
+
+    .detail-item label {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.15rem;
+    }
+
+    .detail-item span {
+      font-size: 0.88rem;
+      color: #ccc;
+    }
+
+    .amenity-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      border: 1px solid #333;
+      color: #888;
+    }
+
+    .pill.yes  { border-color: #2d5a3a; color: #6dbf7e; }
+    .pill.no   { border-color: #2a2a2a; color: #555; }
+    .pill.partial { border-color: #4a4020; color: #c8a84a; }
+
+    .apt-notes {
+      margin-top: 0.9rem;
+      font-size: 0.85rem;
+      color: #888;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .apt-url-link {
+      display: inline-block;
+      margin-top: 0.75rem;
+      font-size: 0.82rem;
+      color: #5a7ab5;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .apt-url-link:hover { text-decoration: underline; color: #7fa8e0; }
+
+    .apt-timestamp {
+      font-size: 0.72rem;
+      color: #444;
+      margin-top: 0.85rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    /* ── Edit form ── */
+    .btn-edit {
+      margin-top: 1rem;
+      background: none;
+      border: 1px solid #333;
+      border-radius: 5px;
+      color: #777;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.9rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-edit:hover { border-color: #5a7ab5; color: #7fa8e0; }
+
+    .btn-delete {
+      margin-top: 1rem;
+      margin-left: 0.5rem;
+      background: none;
+      border: 1px solid #3a2020;
+      border-radius: 5px;
+      color: #884444;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.82rem;
+      padding: 0.35rem 0.9rem;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn-delete:hover { border-color: #cf6679; color: #cf6679; background: #1e1010; }
+
+    .edit-form { padding-top: 0.75rem; }
+
+    .edit-section-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #555;
+      margin: 1.1rem 0 0.75rem;
+      padding-top: 1rem;
+      border-top: 1px solid #1f1f1f;
+    }
+    .edit-section-title:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .edit-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 0.75rem;
+    }
+    .edit-field:last-child { margin-bottom: 0; }
+
+    .edit-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .btn-save-edit {
+      background: #5a7ab5;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.9rem;
+      padding: 0.6rem 1.5rem;
+      flex: 1;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-save-edit:hover { background: #6d8ec7; }
+    .btn-save-edit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-cancel-edit {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #777;
+      cursor: pointer;
+      font-family: sans-serif;
+      font-size: 0.9rem;
+      padding: 0.6rem 1.25rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-cancel-edit:hover { border-color: #555; color: #bbb; }
+
+    .edit-save-msg { font-size: 0.82rem; margin-top: 0.6rem; text-align: center; min-height: 1em; }
+    .edit-save-msg.success { color: #6dbf7e; }
+    .edit-save-msg.error   { color: #cf6679; }
+
+    @media (max-width: 520px) {
+      .edit-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 520px) {
+      .grid-2, .detail-grid { grid-template-columns: 1fr; }
+      .apt-card-header { flex-direction: column; gap: 0.5rem; }
+      .apt-right { align-items: flex-start; flex-direction: row; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Apartment Tracker</h1>
+
+    <!-- Tab bar -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="add">Add Apartment</button>
+      <button class="tab-btn" data-tab="view">View Apartments</button>
+    </div>
+
+    <!-- ══════════════ ADD TAB ══════════════ -->
+    <div class="tab-panel active" id="tab-add">
+      <form id="aptForm">
+
+        <div class="section">
+          <h2>Basic Info</h2>
+          <div class="grid-2">
+            <div class="field">
+              <label for="apartmentName">Apartment Name *</label>
+              <input type="text" id="apartmentName" name="apartmentName" required placeholder="e.g. The Monroe">
+            </div>
+            <div class="field">
+              <label for="floorPlanName">Floor Plan Name</label>
+              <input type="text" id="floorPlanName" name="floorPlanName" placeholder="e.g. 1BR/1BA - A2">
+            </div>
+            <div class="field">
+              <label for="pricePerMonth">$/mo</label>
+              <input type="number" id="pricePerMonth" name="pricePerMonth" min="0" placeholder="1850">
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input type="tel" id="phone" name="phone" placeholder="(555) 000-0000">
+            </div>
+          </div>
+          <div class="field" style="margin-top:1rem;">
+            <label for="address">Address</label>
+            <input type="text" id="address" name="address" placeholder="123 Main St, City, ST 00000">
+          </div>
+          <div class="field">
+            <label for="url">Listing URL</label>
+            <input type="url" id="url" name="url" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Status &amp; Tour</h2>
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="No call yet">No call yet</option>
+              <option value="Tour scheduled">Tour scheduled</option>
+              <option value="Toured">Toured</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="tourDate">Tour Date</label>
+              <input type="date" id="tourDate" name="tourDate">
+            </div>
+            <div class="field">
+              <label for="tourTime">Tour Time</label>
+              <input type="time" id="tourTime" name="tourTime">
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Amenities</h2>
+
+          <div class="amenity-row">
+            <span class="amenity-label">W/D in unit</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="washerDryer" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="washerDryer" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Parking included</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="parkingIncluded" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="parkingIncluded" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Carpet floors</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="carpet" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="carpet" value="No" checked><span>No</span></label>
+              <label><input type="radio" name="carpet" value="Some Carpet"><span>Some Carpet</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Pool</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="pool" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="pool" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Gym</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="gym" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="gym" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Dishwasher</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="dishwasher" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="dishwasher" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Power included</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="powerIncluded" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="powerIncluded" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Balcony / Patio</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="balcony" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="balcony" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Pet friendly</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="petFriendly" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="petFriendly" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">Storage</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="storage" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="storage" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+          <div class="amenity-row">
+            <span class="amenity-label">WiFi included</span>
+            <div class="toggle-group">
+              <label><input type="radio" name="wifiIncluded" value="Yes"><span>Yes</span></label>
+              <label><input type="radio" name="wifiIncluded" value="No" checked><span>No</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Notes</h2>
+          <div class="field">
+            <textarea id="notes" name="notes" placeholder="Any additional details..."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn">Save to Sheet</button>
+        <div id="status-msg"></div>
+
+      </form>
+    </div>
+
+    <!-- ══════════════ VIEW TAB ══════════════ -->
+    <div class="tab-panel" id="tab-view">
+      <div class="view-toolbar">
+        <button class="btn-load" id="loadBtn">Load Data</button>
+        <input type="search" id="search-box" placeholder="Search apartments...">
+        <span id="view-status"></span>
+      </div>
+      <div id="apt-list">
+        <div class="empty-state">Click "Load Data" to fetch apartments from your sheet.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Config ──────────────────────────────────────────────────
+    // Paste your deployed Google Apps Script URL here after setup.
+    // The same URL handles both POST (save) and GET (load data).
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDInOgM7HTMa179_rkXUhy0AWxfTvfoUGeaa-deVOHYVTiN0u3UwSeWQGGioIrbGhQmQ/exec';
+
+    // ── Tab switching ────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── ADD: form submit ─────────────────────────────────────────
+    const form      = document.getElementById('aptForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('status-msg');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      if (GAS_URL === 'PASTE_YOUR_GAS_URL_HERE') {
+        statusMsg.textContent = 'Set GAS_URL in the script first. See Code.gs for setup instructions.';
+        statusMsg.className = 'error';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+      statusMsg.textContent = '';
+      statusMsg.className = '';
+
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: new FormData(form)
+        });
+        statusMsg.textContent = 'Saved! Check your Google Sheet.';
+        statusMsg.className = 'success';
+        form.reset();
+      } catch (err) {
+        statusMsg.textContent = 'Network error — could not reach Google. Check your URL.';
+        statusMsg.className = 'error';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Save to Sheet';
+      }
+    });
+
+    // ── VIEW: load & render ──────────────────────────────────────
+    const loadBtn    = document.getElementById('loadBtn');
+    const searchBox  = document.getElementById('search-box');
+    const aptList    = document.getElementById('apt-list');
+    const viewStatus = document.getElementById('view-status');
+
+    let allRows = [];
+
+    loadBtn.addEventListener('click', loadData);
+
+    async function loadData() {
+      if (GAS_URL === 'PASTE_YOUR_GAS_URL_HERE') {
+        viewStatus.textContent = 'Set GAS_URL first.';
+        return;
+      }
+
+      loadBtn.disabled = true;
+      loadBtn.textContent = 'Loading...';
+      viewStatus.textContent = '';
+      aptList.innerHTML = '';
+
+      try {
+        const res  = await fetch(GAS_URL);
+        const data = await res.json();
+
+        if (data.status !== 'success') throw new Error(data.message || 'Unknown error');
+
+        allRows = data.rows;
+        renderCards(allRows);
+        viewStatus.textContent = allRows.length + ' apartment' + (allRows.length !== 1 ? 's' : '');
+      } catch (err) {
+        aptList.innerHTML = '<div class="empty-state" style="color:#cf6679">Error loading data: ' + err.message + '</div>';
+      } finally {
+        loadBtn.disabled = false;
+        loadBtn.textContent = 'Refresh';
+      }
+    }
+
+    searchBox.addEventListener('input', () => {
+      const q = searchBox.value.toLowerCase();
+      const filtered = allRows.filter(r =>
+        Object.values(r).some(v => String(v).toLowerCase().includes(q))
+      );
+      renderCards(filtered);
+      viewStatus.textContent = filtered.length + ' of ' + allRows.length + ' apartment' + (allRows.length !== 1 ? 's' : '');
+    });
+
+    // rowData stores the full row object (including _row) keyed by card index
+    let rowData = {};
+
+    function renderCards(rows) {
+      if (rows.length === 0) {
+        aptList.innerHTML = '<div class="empty-state">No apartments found.</div>';
+        return;
+      }
+
+      rowData = {};
+      aptList.innerHTML = rows.map((r, i) => { rowData[i] = r; return buildCard(r, i); }).join('');
+
+      aptList.querySelectorAll('.apt-card-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const body = header.nextElementSibling;
+          const icon = header.querySelector('.expand-icon');
+          const open = body.classList.toggle('open');
+          icon.textContent = open ? '▲' : '▼';
+        });
+      });
+
+      aptList.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx);
+          const card = aptList.querySelector(`.apt-card[data-idx="${idx}"]`);
+          showEditForm(card, rowData[idx], idx);
+        });
+      });
+
+      aptList.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx);
+          deleteEntry(rowData[idx]);
+        });
+      });
+    }
+
+    function buildCard(r, i) {
+      const badgeClass = {
+        'No call yet':    'badge-none',
+        'Tour scheduled': 'badge-scheduled',
+        'Toured':         'badge-toured'
+      }[r['Status']] || 'badge-none';
+
+      const price   = r['$/mo'] ? '$' + Number(r['$/mo']).toLocaleString() + '/mo' : '';
+      const sub     = [r['Floor Plan Name'], r['Address']].filter(Boolean).join(' · ');
+      const tourInfo = [r['Tour Date'], r['Tour Time']].filter(Boolean).join(' @ ');
+
+      return `
+        <div class="apt-card" data-idx="${i}">
+          <div class="apt-card-header">
+            <div>
+              <div class="apt-name">${escHtml(r['Apartment Name'] || '(unnamed)')}</div>
+              ${sub     ? `<div class="apt-sub">${escHtml(sub)}</div>` : ''}
+              ${tourInfo ? `<div class="apt-sub" style="color:#5a7ab5;margin-top:0.25rem;">Tour: ${escHtml(tourInfo)}</div>` : ''}
+            </div>
+            <div class="apt-right">
+              ${price ? `<div class="apt-price">${price}</div>` : ''}
+              <span class="status-badge ${badgeClass}">${escHtml(r['Status'] || 'No call yet')}</span>
+              <div class="expand-icon">▼</div>
+            </div>
+          </div>
+          <div class="apt-card-body">
+            ${buildViewBody(r, i)}
+          </div>
+        </div>`;
+    }
+
+    function buildViewBody(r, i) {
+      const amenities = [
+        { label: 'W/D in unit', val: r['W/D in unit'] },
+        { label: 'Parking',     val: r['Parking included'] },
+        { label: 'Carpet',      val: r['Carpet floors'] },
+        { label: 'Pool',        val: r['Pool'] },
+        { label: 'Gym',         val: r['Gym'] },
+        { label: 'Dishwasher',  val: r['Dishwasher'] },
+        { label: 'Power',       val: r['Power included'] },
+        { label: 'Balcony',     val: r['Balcony/patio'] },
+        { label: 'Pets OK',     val: r['Pet friendly'] },
+        { label: 'Storage',     val: r['Storage'] },
+        { label: 'WiFi',        val: r['WiFi included'] },
+      ];
+      const pillsHtml = amenities.map(a => {
+        const cls = a.val === 'Yes' ? 'yes' : a.val === 'Not all' || a.val === 'Some Carpet' ? 'partial' : 'no';
+        return `<span class="pill ${cls}">${a.label}: ${a.val || 'No'}</span>`;
+      }).join('');
+
+      const urlHtml   = r['URL']   ? `<a class="apt-url-link" href="${escHtml(r['URL'])}" target="_blank" rel="noopener">${escHtml(r['URL'])}</a>` : '';
+      const notesHtml = r['Notes'] ? `<div class="apt-notes">${escHtml(r['Notes'])}</div>` : '';
+
+      return `
+        <div class="detail-grid">
+          ${r['Phone']          ? `<div class="detail-item"><label>Phone</label><span>${escHtml(r['Phone'])}</span></div>` : ''}
+          ${r['Address']        ? `<div class="detail-item"><label>Address</label><span>${escHtml(r['Address'])}</span></div>` : ''}
+          ${r['Floor Plan Name']? `<div class="detail-item"><label>Floor Plan</label><span>${escHtml(r['Floor Plan Name'])}</span></div>` : ''}
+          ${r['$/mo']           ? `<div class="detail-item"><label>Price</label><span>$${Number(r['$/mo']).toLocaleString()}/mo</span></div>` : ''}
+          ${r['Tour Date']      ? `<div class="detail-item"><label>Tour Date</label><span>${escHtml(r['Tour Date'])}</span></div>` : ''}
+          ${r['Tour Time']      ? `<div class="detail-item"><label>Tour Time</label><span>${escHtml(r['Tour Time'])}</span></div>` : ''}
+        </div>
+        <div class="amenity-pills">${pillsHtml}</div>
+        ${urlHtml}
+        ${notesHtml}
+        <button class="btn-edit" data-idx="${i}">Edit</button>
+        <button class="btn-delete" data-idx="${i}">Delete</button>`;
+    }
+
+    function buildEditForm(r) {
+      function tf(name, label, val, type) {
+        return `<div class="edit-field"><label>${label}</label>
+          <input type="${type||'text'}" name="${name}" value="${escHtml(val||'')}"></div>`;
+      }
+      function sf(name, label, val, opts) {
+        return `<div class="edit-field"><label>${label}</label>
+          <select name="${name}">${opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+      }
+      function rg(name, label, val, opts) {
+        return `<div class="amenity-row"><span class="amenity-label">${label}</span>
+          <div class="toggle-group">${opts.map(o=>`<label><input type="radio" name="${name}" value="${o}"${val===o?' checked':''}><span>${o}</span></label>`).join('')}</div></div>`;
+      }
+      return `<div class="edit-form">
+        <div class="edit-section-title">Basic Info</div>
+        <div class="edit-grid">
+          ${tf('apartmentName','Apartment Name',r['Apartment Name'])}
+          ${tf('floorPlanName','Floor Plan',r['Floor Plan Name'])}
+          ${tf('pricePerMonth','$/mo',r['$/mo'],'number')}
+          ${tf('phone','Phone',r['Phone'],'tel')}
+        </div>
+        ${tf('address','Address',r['Address'])}
+        ${tf('url','Listing URL',r['URL'],'url')}
+        <div class="edit-section-title">Status &amp; Tour</div>
+        ${sf('status','Status',r['Status'],['No call yet','Tour scheduled','Toured'])}
+        <div class="edit-grid">
+          ${tf('tourDate','Tour Date',r['Tour Date'],'date')}
+          ${tf('tourTime','Tour Time',r['Tour Time'],'time')}
+        </div>
+        <div class="edit-section-title">Amenities</div>
+        ${rg('washerDryer','W/D in unit',r['W/D in unit'],['Yes','No'])}
+        ${rg('parkingIncluded','Parking included',r['Parking included'],['Yes','No'])}
+        ${rg('carpet','Carpet floors',r['Carpet floors'],['Yes','No','Some Carpet'])}
+        ${rg('pool','Pool',r['Pool'],['Yes','No'])}
+        ${rg('gym','Gym',r['Gym'],['Yes','No'])}
+        ${rg('dishwasher','Dishwasher',r['Dishwasher'],['Yes','No'])}
+        ${rg('powerIncluded','Power included',r['Power included'],['Yes','No'])}
+        ${rg('balcony','Balcony/Patio',r['Balcony/patio'],['Yes','No'])}
+        ${rg('petFriendly','Pet friendly',r['Pet friendly'],['Yes','No'])}
+        ${rg('storage','Storage',r['Storage'],['Yes','No'])}
+        ${rg('wifiIncluded','WiFi included',r['WiFi included'],['Yes','No'])}
+        <div class="edit-section-title">Notes</div>
+        <textarea name="notes" rows="4">${escHtml(r['Notes']||'')}</textarea>
+        <div class="edit-actions">
+          <button type="button" class="btn-save-edit">Save Changes</button>
+          <button type="button" class="btn-cancel-edit">Cancel</button>
+        </div>
+        <div class="edit-save-msg"></div>
+      </div>`;
+    }
+
+    function showEditForm(card, r, idx) {
+      const body = card.querySelector('.apt-card-body');
+      body.classList.add('open');
+      body.innerHTML = buildEditForm(r);
+
+      body.querySelector('.btn-cancel-edit').addEventListener('click', () => {
+        body.innerHTML = buildViewBody(r, idx);
+        body.querySelector('.btn-edit').addEventListener('click', e => {
+          e.stopPropagation();
+          showEditForm(card, rowData[idx], idx);
+        });
+      });
+
+      body.querySelector('.btn-save-edit').addEventListener('click', async () => {
+        const saveBtn = body.querySelector('.btn-save-edit');
+        const saveMsg = body.querySelector('.edit-save-msg');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        saveMsg.textContent = '';
+        saveMsg.className = 'edit-save-msg';
+
+        const fd = new FormData();
+        fd.append('sheetRow', r._row);
+        body.querySelectorAll('input:not([type=radio]), select, textarea').forEach(el => {
+          if (el.name) fd.append(el.name, el.value);
+        });
+        body.querySelectorAll('input[type=radio]:checked').forEach(el => {
+          fd.append(el.name, el.value);
+        });
+
+        try {
+          await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: fd });
+          saveMsg.textContent = 'Saved! Refreshing...';
+          saveMsg.className = 'edit-save-msg success';
+          setTimeout(() => loadData(), 1000);
+        } catch (err) {
+          saveMsg.textContent = 'Network error — could not save.';
+          saveMsg.className = 'edit-save-msg error';
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Changes';
+        }
+      });
+    }
+
+    async function deleteEntry(r) {
+      const name = r['Apartment Name'] || 'this entry';
+      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+
+      const fd = new FormData();
+      fd.append('action', 'delete');
+      fd.append('sheetRow', r._row);
+
+      try {
+        await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: fd });
+        loadData();
+      } catch (err) {
+        alert('Network error — could not delete. Check your connection.');
+      }
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
