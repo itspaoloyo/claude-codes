@@ -110,7 +110,16 @@ function doGet(e) {
       if (!rowArr.some(function(cell) { return String(cell).trim() !== ''; })) continue;
       var obj = { _row: i + 1 };
       COLUMNS.forEach(function(col, j) {
-        obj[col] = rowArr[j] !== undefined ? String(rowArr[j]) : '';
+        var val = rowArr[j];
+        if (val instanceof Date) {
+          var formatted = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+          // Sheets stores time-only values with a 1899-12-30 date — extract just the time
+          obj[col] = formatted === '1899-12-30'
+            ? Utilities.formatDate(val, Session.getScriptTimeZone(), 'HH:mm')
+            : formatted;
+        } else {
+          obj[col] = val !== undefined ? String(val) : '';
+        }
       });
       rows.push(obj);
     }

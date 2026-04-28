@@ -530,7 +530,7 @@
           </div>
           <div class="field">
             <label for="url">Listing URL</label>
-            <input type="url" id="url" name="url" placeholder="https://...">
+            <input type="text" id="url" name="url" placeholder="e.g. apartments.com/listing">
           </div>
         </div>
 
@@ -670,7 +670,7 @@
     // ── Config ──────────────────────────────────────────────────
     // Paste your deployed Google Apps Script URL here after setup.
     // The same URL handles both POST (save) and GET (load data).
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDInOgM7HTMa179_rkXUhy0AWxfTvfoUGeaa-deVOHYVTiN0u3UwSeWQGGioIrbGhQmQ/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwsL_--VUVeYFGnXA8475GsDOCmDWG-lZYpJXmTGkYnRyDT5mfIlBkhfXVyztI02cK6/exec';
 
     // ── Tab switching ────────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -814,7 +814,7 @@
 
       const price   = r['$/mo'] ? '$' + Number(r['$/mo']).toLocaleString() + '/mo' : '';
       const sub     = [r['Floor Plan Name'], r['Address']].filter(Boolean).join(' · ');
-      const tourInfo = [r['Tour Date'], r['Tour Time']].filter(Boolean).join(' @ ');
+      const tourInfo = formatTourDateTime(r['Tour Date'], r['Tour Time']);
 
       return `
         <div class="apt-card" data-idx="${i}">
@@ -864,8 +864,7 @@
           ${r['Address']        ? `<div class="detail-item"><label>Address</label><span>${escHtml(r['Address'])}</span></div>` : ''}
           ${r['Floor Plan Name']? `<div class="detail-item"><label>Floor Plan</label><span>${escHtml(r['Floor Plan Name'])}</span></div>` : ''}
           ${r['$/mo']           ? `<div class="detail-item"><label>Price</label><span>$${Number(r['$/mo']).toLocaleString()}/mo</span></div>` : ''}
-          ${r['Tour Date']      ? `<div class="detail-item"><label>Tour Date</label><span>${escHtml(r['Tour Date'])}</span></div>` : ''}
-          ${r['Tour Time']      ? `<div class="detail-item"><label>Tour Time</label><span>${escHtml(r['Tour Time'])}</span></div>` : ''}
+          ${(r['Tour Date'] || r['Tour Time']) ? `<div class="detail-item"><label>Tour</label><span>${escHtml(formatTourDateTime(r['Tour Date'], r['Tour Time']))}</span></div>` : ''}
         </div>
         <div class="amenity-pills">${pillsHtml}</div>
         ${urlHtml}
@@ -983,6 +982,32 @@
       } catch (err) {
         alert('Network error — could not delete. Check your connection.');
       }
+    }
+
+    function formatTourDateTime(dateStr, timeStr) {
+      const parts = [];
+      if (dateStr) {
+        // Try YYYY-MM-DD first, then fall back to direct parse
+        let d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d.getTime())) d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const yy = String(d.getFullYear()).slice(-2);
+          parts.push(`${days[d.getDay()]} - ${mm}/${dd}/${yy}`);
+        } else {
+          parts.push(dateStr);
+        }
+      }
+      if (timeStr) {
+        const [h, m] = (timeStr.split(':').length >= 2) ? timeStr.split(':') : [timeStr, '00'];
+        const hour = parseInt(h);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        parts.push(`${h12}:${m} ${ampm}`);
+      }
+      return parts.join(' - ');
     }
 
     function escHtml(str) {
